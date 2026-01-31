@@ -263,7 +263,7 @@ function zeichneChart(A, B) {
   ctx.fillStyle = '#f0f0f0';
   ctx.fillRect(0, 0, rect.width, rect.height);
 
-  const paddingLeft = 40;
+  const paddingLeft = 45;
   const paddingRight = 10;
   const paddingTop = 10;
   const paddingBottom = 30;
@@ -290,6 +290,9 @@ function zeichneChart(A, B) {
     return;
   }
 
+  // Y‑Achse auf 1000 € runden
+  maxRest = Math.ceil(maxRest / 1000) * 1000;
+
   function xPos(monatIndex) {
     if (maxMonate === 1) return paddingLeft + plotWidth;
     return paddingLeft + (monatIndex / (maxMonate - 1)) * plotWidth;
@@ -299,15 +302,13 @@ function zeichneChart(A, B) {
     return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
   }
 
-  // Y‑Achse: 5 Unterteilungen
-  const ySteps = 5;
+  // Y‑Achse: Linien alle 1000 €
   ctx.strokeStyle = '#ddd';
   ctx.lineWidth = 1;
   ctx.font = '10px -apple-system, sans-serif';
   ctx.fillStyle = '#666';
 
-  for (let i = 0; i <= ySteps; i++) {
-    const value = (maxRest / ySteps) * i;
+  for (let value = 0; value <= maxRest; value += 1000) {
     const y = yPos(value);
 
     ctx.beginPath();
@@ -316,18 +317,29 @@ function zeichneChart(A, B) {
     ctx.stroke();
 
     ctx.fillText(
-      value.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €',
+      value.toLocaleString('de-DE') + ' €',
       2,
       y + 3
     );
   }
 
-  // X‑Achse: Monats‑Labels alle 12 Monate
-  const xStep = Math.ceil(maxMonate / 6); // ca. 6 Labels
+  // X‑Achse: Linien alle 12 Monate
+  const xStep = 12;
+
   ctx.textAlign = 'center';
+  ctx.fillStyle = '#666';
 
   for (let m = 0; m <= maxMonate; m += xStep) {
     const x = xPos(m);
+
+    // vertikale Linie
+    ctx.beginPath();
+    ctx.moveTo(x, paddingTop);
+    ctx.lineTo(x, paddingTop + plotHeight);
+    ctx.strokeStyle = '#eee';
+    ctx.stroke();
+
+    // Label
     ctx.fillText(m.toString(), x, paddingTop + plotHeight + 15);
   }
 
@@ -388,4 +400,5 @@ function zeichneChart(A, B) {
   </script>
 </body>
 </html>
+
 
