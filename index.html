@@ -249,104 +249,125 @@
       zeichneChart(A, B);
     }
 
-    function zeichneChart(A, B) {
-      const canvas = document.getElementById('chart');
-      const ctx = canvas.getContext('2d');
+function zeichneChart(A, B) {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
 
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = '#f0f0f0';
-      ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(0, 0, rect.width, rect.height);
 
-      const paddingLeft = 30;
-      const paddingRight = 10;
-      const paddingTop = 10;
-      const paddingBottom = 25;
-      const plotWidth = rect.width - paddingLeft - paddingRight;
-      const plotHeight = rect.height - paddingTop - paddingBottom;
+  const paddingLeft = 40;
+  const paddingRight = 10;
+  const paddingTop = 10;
+  const paddingBottom = 30;
 
-      let maxRest = 0;
-      let maxMonate = 0;
+  const plotWidth = rect.width - paddingLeft - paddingRight;
+  const plotHeight = rect.height - paddingTop - paddingBottom;
 
-      if (A && A.restschuldVerlauf.length) {
-        maxRest = Math.max(maxRest, ...A.restschuldVerlauf);
-        maxMonate = Math.max(maxMonate, A.restschuldVerlauf.length);
-      }
-      if (B && B.restschuldVerlauf.length) {
-        maxRest = Math.max(maxRest, ...B.restschuldVerlauf);
-        maxMonate = Math.max(maxMonate, B.restschuldVerlauf.length);
-      }
+  let maxRest = 0;
+  let maxMonate = 0;
 
-      if (maxRest === 0 || maxMonate === 0) {
-        ctx.fillStyle = '#666';
-        ctx.font = '12px -apple-system, sans-serif';
-        ctx.fillText('Keine gültigen Daten für die Grafik.', paddingLeft, paddingTop + 20);
-        return;
-      }
+  if (A && A.restschuldVerlauf.length) {
+    maxRest = Math.max(maxRest, ...A.restschuldVerlauf);
+    maxMonate = Math.max(maxMonate, A.restschuldVerlauf.length);
+  }
+  if (B && B.restschuldVerlauf.length) {
+    maxRest = Math.max(maxRest, ...B.restschuldVerlauf);
+    maxMonate = Math.max(maxMonate, B.restschuldVerlauf.length);
+  }
 
-      function xPos(monatIndex) {
-        if (maxMonate === 1) return paddingLeft + plotWidth;
-        return paddingLeft + (monatIndex / (maxMonate - 1)) * plotWidth;
-      }
+  if (maxRest === 0 || maxMonate === 0) {
+    ctx.fillStyle = '#666';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillText('Keine gültigen Daten für die Grafik.', paddingLeft, paddingTop + 20);
+    return;
+  }
 
-      function yPos(rest) {
-        return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
-      }
+  function xPos(monatIndex) {
+    if (maxMonate === 1) return paddingLeft + plotWidth;
+    return paddingLeft + (monatIndex / (maxMonate - 1)) * plotWidth;
+  }
 
-      ctx.strokeStyle = '#ddd';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, paddingTop);
-      ctx.lineTo(paddingLeft, paddingTop + plotHeight);
-      ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
-      ctx.stroke();
+  function yPos(rest) {
+    return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
+  }
 
-      ctx.fillStyle = '#666';
-      ctx.font = '10px -apple-system, sans-serif';
-      ctx.fillText('0 €', 2, paddingTop + plotHeight);
-      ctx.fillText(formatEuro(maxRest) + ' €', 2, paddingTop + 8);
+  // Y‑Achse: 5 Unterteilungen
+  const ySteps = 5;
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 1;
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.fillStyle = '#666';
 
-      ctx.textAlign = 'center';
-      ctx.fillText('Monate', paddingLeft + plotWidth / 2, rect.height - 5);
-      ctx.textAlign = 'left';
+  for (let i = 0; i <= ySteps; i++) {
+    const value = (maxRest / ySteps) * i;
+    const y = yPos(value);
 
-      if (A && A.restschuldVerlauf.length) {
-        ctx.strokeStyle = '#007aff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        A.restschuldVerlauf.forEach((rest, idx) => {
-          const x = xPos(idx);
-          const y = yPos(rest);
-          if (idx === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y);
+    ctx.lineTo(paddingLeft + plotWidth, y);
+    ctx.stroke();
 
-      if (B && B.restschuldVerlauf.length) {
-        ctx.strokeStyle = '#ff3b30';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        B.restschuldVerlauf.forEach((rest, idx) => {
-          const x = xPos(idx);
-          const y = yPos(rest);
-          if (idx === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
+    ctx.fillText(
+      value.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €',
+      2,
+      y + 3
+    );
+  }
 
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.fillStyle = '#007aff';
-      ctx.fillText('A', paddingLeft + 10, paddingTop + 15);
-      ctx.fillStyle = '#ff3b30';
-      ctx.fillText('B', paddingLeft + 25, paddingTop + 15);
-    }
+  // X‑Achse: Monats‑Labels alle 12 Monate
+  const xStep = Math.ceil(maxMonate / 6); // ca. 6 Labels
+  ctx.textAlign = 'center';
+
+  for (let m = 0; m <= maxMonate; m += xStep) {
+    const x = xPos(m);
+    ctx.fillText(m.toString(), x, paddingTop + plotHeight + 15);
+  }
+
+  ctx.textAlign = 'left';
+
+  // Kredit A zeichnen
+  if (A && A.restschuldVerlauf.length) {
+    ctx.strokeStyle = '#007aff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    A.restschuldVerlauf.forEach((rest, idx) => {
+      const x = xPos(idx);
+      const y = yPos(rest);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // Kredit B zeichnen
+  if (B && B.restschuldVerlauf.length) {
+    ctx.strokeStyle = '#ff3b30';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    B.restschuldVerlauf.forEach((rest, idx) => {
+      const x = xPos(idx);
+      const y = yPos(rest);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // Legende
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.fillStyle = '#007aff';
+  ctx.fillText('A', paddingLeft + 10, paddingTop + 15);
+  ctx.fillStyle = '#ff3b30';
+  ctx.fillText('B', paddingLeft + 25, paddingTop + 15);
+}
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -367,3 +388,4 @@
   </script>
 </body>
 </html>
+
