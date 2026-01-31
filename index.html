@@ -263,7 +263,7 @@ function zeichneChart(A, B) {
   ctx.fillStyle = '#f0f0f0';
   ctx.fillRect(0, 0, rect.width, rect.height);
 
-  const paddingLeft = 45;
+  const paddingLeft = 50;
   const paddingRight = 10;
   const paddingTop = 10;
   const paddingBottom = 30;
@@ -290,8 +290,12 @@ function zeichneChart(A, B) {
     return;
   }
 
-  // Y‑Achse auf 1000 € runden
+  // Y‑Achse: auf 1000 € runden
   maxRest = Math.ceil(maxRest / 1000) * 1000;
+
+  // Anzahl der Unterteilungen (ca. 10)
+  const ySteps = 10;
+  const yStepValue = maxRest / ySteps;
 
   function xPos(monatIndex) {
     if (maxMonate === 1) return paddingLeft + plotWidth;
@@ -302,13 +306,14 @@ function zeichneChart(A, B) {
     return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
   }
 
-  // Y‑Achse: Linien alle 1000 €
+  // Y‑Achse zeichnen
   ctx.strokeStyle = '#ddd';
   ctx.lineWidth = 1;
   ctx.font = '10px -apple-system, sans-serif';
   ctx.fillStyle = '#666';
 
-  for (let value = 0; value <= maxRest; value += 1000) {
+  for (let i = 0; i <= ySteps; i++) {
+    const value = yStepValue * i;
     const y = yPos(value);
 
     ctx.beginPath();
@@ -317,29 +322,28 @@ function zeichneChart(A, B) {
     ctx.stroke();
 
     ctx.fillText(
-      value.toLocaleString('de-DE') + ' €',
+      value.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €',
       2,
       y + 3
     );
   }
 
-  // X‑Achse: Linien alle 12 Monate
-  const xStep = 12;
+  // X‑Achse: ca. 10 Unterteilungen
+  const xSteps = 10;
+  const xStepValue = Math.ceil(maxMonate / xSteps);
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#666';
 
-  for (let m = 0; m <= maxMonate; m += xStep) {
+  for (let m = 0; m <= maxMonate; m += xStepValue) {
     const x = xPos(m);
 
-    // vertikale Linie
     ctx.beginPath();
     ctx.moveTo(x, paddingTop);
     ctx.lineTo(x, paddingTop + plotHeight);
     ctx.strokeStyle = '#eee';
     ctx.stroke();
 
-    // Label
     ctx.fillText(m.toString(), x, paddingTop + plotHeight + 15);
   }
 
@@ -400,5 +404,6 @@ function zeichneChart(A, B) {
   </script>
 </body>
 </html>
+
 
 
