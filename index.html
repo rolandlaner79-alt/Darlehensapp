@@ -207,6 +207,13 @@
     }
 
     function vergleichen() {
+      // Hilfsfunktion für Jahre + Monate
+function laufzeitText(monate) {
+  const jahre = Math.floor(monate / 12);
+  const rest = monate % 12;
+  return `${jahre} Jahre ${rest} Monate`;
+}
+   
       const A = berechneDarlehen(
         parseFloat(document.getElementById('kreditA').value),
         parseFloat(document.getElementById('zinsA').value),
@@ -227,23 +234,27 @@
       if (!A) {
         ergA.innerHTML = "<b>Ungültige Eingaben für Kredit A.</b><br><span class='hint'>Bitte Kreditsumme, Zinssatz und entweder Laufzeit oder Rate angeben.</span>";
       } else {
-        ergA.innerHTML = `
-          <h3>Kredit A</h3>
-          Rate: <b>${formatEuro(A.rate)} €</b><br>
-          Laufzeit: <b>${A.n} Monate</b><br>
-          Gesamtzinsen: <b>${formatEuro(A.gesamtZinsen)} €</b><br>
-        `;
+ergA.innerHTML = `
+  <h3>Kredit A</h3>
+  Rate: <b>${formatEuro(A.rate)} €</b><br>
+  Laufzeit: <b>${A.n} Monate</b> 
+  <span class="hint">(${laufzeitText(A.n)})</span><br>
+  Gesamtzinsen: <b>${formatEuro(A.gesamtZinsen)} €</b><br>
+`;
+
       }
 
       if (!B) {
         ergB.innerHTML = "<b>Ungültige Eingaben für Kredit B.</b><br><span class='hint'>Bitte Kreditsumme, Zinssatz und entweder Laufzeit oder Rate angeben.</span>";
       } else {
         ergB.innerHTML = `
-          <h3>Kredit B</h3>
-          Rate: <b>${formatEuro(B.rate)} €</b><br>
-          Laufzeit: <b>${B.n} Monate</b><br>
-          Gesamtzinsen: <b>${formatEuro(B.gesamtZinsen)} €</b><br>
-        `;
+  <h3>Kredit B</h3>
+  Rate: <b>${formatEuro(B.rate)} €</b><br>
+  Laufzeit: <b>${B.n} Monate</b> 
+  <span class="hint">(${laufzeitText(B.n)})</span><br>
+  Gesamtzinsen: <b>${formatEuro(B.gesamtZinsen)} €</b><br>
+`;
+
       }
 
       zeichneChart(A, B);
@@ -404,6 +415,7 @@ function zeichneChart(A, B) {
   </script>
 </body>
 </html>
+
 
 
 
