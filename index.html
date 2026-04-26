@@ -183,8 +183,8 @@ input {
     <p class="hint">Die Kurven zeigen die Restschuld von Kredit A (blau) und Kredit B (rot) über die Monate.</p>
   </div>
 
-  <script>
-  function berechneDarlehen(K, p, n, rateInput) {
+ <script>
+function berechneDarlehen(K, p, n, rateInput) {
   const i = p / 12 / 100;
   let rate;
 
@@ -198,16 +198,16 @@ input {
   // FALL 2: Kreditsumme + Rate => Laufzeit
   else if (K && rateInput && !n) {
     rate = rateInput;
+
     if (rate <= K * i) return null;
 
     n = Math.log(rate / (rate - K * i)) / Math.log(1 + i);
     n = Math.ceil(n);
   }
 
-  // FALL 3: Rate + Laufzeit => Kreditsumme (NEU)
+  // FALL 3: Rate + Laufzeit => Kreditsumme
   else if (!K && rateInput && n) {
     rate = rateInput;
-
     K = rate * ((1 - Math.pow(1 + i, -n)) / i);
   }
 
@@ -215,79 +215,99 @@ input {
     return null;
   }
 
-      let rest = K;
-      let gesamtZinsen = 0;
-      const restschuldVerlauf = [];
+  let rest = K;
+  let gesamtZinsen = 0;
+  const restschuldVerlauf = [];
 
-      for (let m = 1; m <= n; m++) {
-        const zins = rest * i;
-        const tilgung = rate - zins;
-        rest = rest - tilgung;
-        gesamtZinsen += zins;
-        restschuldVerlauf.push(rest > 0 ? rest : 0);
-        if (rest <= 0) break;
-      }
+  for (let m = 1; m <= n; m++) {
+    const zins = rest * i;
+    const tilgung = rate - zins;
 
-      return { rate, n: restschuldVerlauf.length, gesamtZinsen, restschuldVerlauf };
-    }
+    rest -= tilgung;
+    gesamtZinsen += zins;
 
-    function formatEuro(x) {
-      return x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+    restschuldVerlauf.push(rest > 0 ? rest : 0);
 
-    function vergleichen() {
-      // Hilfsfunktion für Jahre + Monate
-function laufzeitText(monate) {
-  const jahre = Math.floor(monate / 12);
-  const rest = monate % 12;
-  return `${jahre} Jahre ${rest} Monate`;
+    if (rest <= 0) break;
+  }
+
+  const laufzeit = restschuldVerlauf.length;
+  const gesamtrueckzahlung = rate * laufzeit;
+  const zinsProzent = (gesamtZinsen / K) * 100;
+
+  return {
+    K,
+    rate,
+    n: laufzeit,
+    gesamtZinsen,
+    gesamtrueckzahlung,
+    zinsProzent,
+    restschuldVerlauf
+  };
 }
-   
-      const A = berechneDarlehen(
-        parseFloat(document.getElementById('kreditA').value),
-        parseFloat(document.getElementById('zinsA').value),
-        parseInt(document.getElementById('laufzeitA').value),
-        parseFloat(document.getElementById('rateA').value)
-      );
 
-      const B = berechneDarlehen(
-        parseFloat(document.getElementById('kreditB').value),
-        parseFloat(document.getElementById('zinsB').value),
-        parseInt(document.getElementById('laufzeitB').value),
-        parseFloat(document.getElementById('rateB').value)
-      );
+function formatEuro(x) {
+  return x.toLocaleString('de-DE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
 
-      const ergA = document.getElementById('ergA');
-      const ergB = document.getElementById('ergB');
+function formatProzent(x) {
+  return x.toLocaleString('de-DE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
 
-      if (!A) {
-        ergA.innerHTML = "<b>Ungültige Eingaben für Kredit A.</b><br><span class='hint'>Bitte Kreditsumme, Zinssatz und entweder Laufzeit oder Rate angeben.</span>";
-      } else {
-ergA.innerHTML = `
-  <h3>Kredit A</h3>
-  Rate: <b>${formatEuro(A.rate)} €</b><br>
-  Laufzeit: <b>${A.n} Monate</b> 
-  <span class="hint">(${laufzeitText(A.n)})</span><br>
-  Gesamtzinsen: <b>${formatEuro(A.gesamtZinsen)} €</b><br>
-`;
+function vergleichen() {
+  const A = berechneDarlehen(
+    parseFloat(document.getElementById('kreditA').value),
+    parseFloat(document.getElementById('zinsA').value),
+    parseInt(document.getElementById('laufzeitA').value),
+    parseFloat(document.getElementById('rateA').value)
+  );
 
-      }
+  const B = berechneDarlehen(
+    parseFloat(document.getElementById('kreditB').value),
+    parseFloat(document.getElementById('zinsB').value),
+    parseInt(document.getElementById('laufzeitB').value),
+    parseFloat(document.getElementById('rateB').value)
+  );
 
-      if (!B) {
-        ergB.innerHTML = "<b>Ungültige Eingaben für Kredit B.</b><br><span class='hint'>Bitte Kreditsumme, Zinssatz und entweder Laufzeit oder Rate angeben.</span>";
-      } else {
-        ergB.innerHTML = `
-  <h3>Kredit B</h3>
-  Rate: <b>${formatEuro(B.rate)} €</b><br>
-  Laufzeit: <b>${B.n} Monate</b> 
-  <span class="hint">(${laufzeitText(B.n)})</span><br>
-  Gesamtzinsen: <b>${formatEuro(B.gesamtZinsen)} €</b><br>
-`;
+  const ergA = document.getElementById('ergA');
+  const ergB = document.getElementById('ergB');
 
-      }
+  if (!A) {
+    ergA.innerHTML = "<b>Ungültige Eingaben für Kredit A.</b>";
+  } else {
+    ergA.innerHTML = `
+      <h3>Kredit A</h3>
+      Kreditsumme: <b>${formatEuro(A.K)} €</b><br>
+      Monatliche Rate: <b>${formatEuro(A.rate)} €</b><br>
+      Laufzeit: <b>${A.n} Monate</b><br>
+      Gesamtzinsen: <b>${formatEuro(A.gesamtZinsen)} €</b><br>
+      Gesamtrückzahlung: <b>${formatEuro(A.gesamtrueckzahlung)} €</b><br>
+      Zinsanteil: <b>${formatProzent(A.zinsProzent)} %</b><br>
+    `;
+  }
 
-      zeichneChart(A, B);
-    }
+  if (!B) {
+    ergB.innerHTML = "<b>Ungültige Eingaben für Kredit B.</b>";
+  } else {
+    ergB.innerHTML = `
+      <h3>Kredit B</h3>
+      Kreditsumme: <b>${formatEuro(B.K)} €</b><br>
+      Monatliche Rate: <b>${formatEuro(B.rate)} €</b><br>
+      Laufzeit: <b>${B.n} Monate</b><br>
+      Gesamtzinsen: <b>${formatEuro(B.gesamtZinsen)} €</b><br>
+      Gesamtrückzahlung: <b>${formatEuro(B.gesamtrueckzahlung)} €</b><br>
+      Zinsanteil: <b>${formatProzent(B.zinsProzent)} %</b><br>
+    `;
+  }
+
+  zeichneChart(A, B);
+}
 
 function zeichneChart(A, B) {
   const canvas = document.getElementById('chart');
@@ -295,18 +315,17 @@ function zeichneChart(A, B) {
 
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
+
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
   ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.fillStyle = '#f0f0f0';
-  ctx.fillRect(0, 0, rect.width, rect.height);
 
-  const paddingLeft = 50;
+  const paddingLeft = 30;
   const paddingRight = 10;
   const paddingTop = 10;
-  const paddingBottom = 30;
+  const paddingBottom = 25;
 
   const plotWidth = rect.width - paddingLeft - paddingRight;
   const plotHeight = rect.height - paddingTop - paddingBottom;
@@ -314,140 +333,66 @@ function zeichneChart(A, B) {
   let maxRest = 0;
   let maxMonate = 0;
 
-  if (A && A.restschuldVerlauf.length) {
+  if (A) {
     maxRest = Math.max(maxRest, ...A.restschuldVerlauf);
     maxMonate = Math.max(maxMonate, A.restschuldVerlauf.length);
   }
-  if (B && B.restschuldVerlauf.length) {
+
+  if (B) {
     maxRest = Math.max(maxRest, ...B.restschuldVerlauf);
     maxMonate = Math.max(maxMonate, B.restschuldVerlauf.length);
   }
 
-  if (maxRest === 0 || maxMonate === 0) {
-    ctx.fillStyle = '#666';
-    ctx.font = '12px -apple-system, sans-serif';
-    ctx.fillText('Keine gültigen Daten für die Grafik.', paddingLeft, paddingTop + 20);
-    return;
-  }
+  if (maxRest === 0) return;
 
-  // Y‑Achse: auf 1000 € runden
-  maxRest = Math.ceil(maxRest / 1000) * 1000;
-
-  // Anzahl der Unterteilungen (ca. 10)
-  const ySteps = 10;
-  const yStepValue = maxRest / ySteps;
-
-  function xPos(monatIndex) {
-    if (maxMonate === 1) return paddingLeft + plotWidth;
-    return paddingLeft + (monatIndex / (maxMonate - 1)) * plotWidth;
+  function xPos(i) {
+    return paddingLeft + (i / (maxMonate - 1)) * plotWidth;
   }
 
   function yPos(rest) {
     return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
   }
 
-  // Y‑Achse zeichnen
-  ctx.strokeStyle = '#ddd';
-  ctx.lineWidth = 1;
-  ctx.font = '10px -apple-system, sans-serif';
-  ctx.fillStyle = '#666';
+  ctx.strokeStyle = "#ddd";
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, paddingTop);
+  ctx.lineTo(paddingLeft, paddingTop + plotHeight);
+  ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
+  ctx.stroke();
 
-  for (let i = 0; i <= ySteps; i++) {
-    const value = yStepValue * i;
-    const y = yPos(value);
-
-    ctx.beginPath();
-    ctx.moveTo(paddingLeft, y);
-    ctx.lineTo(paddingLeft + plotWidth, y);
-    ctx.stroke();
-
-    ctx.fillText(
-      value.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €',
-      2,
-      y + 3
-    );
-  }
-
-  // X‑Achse: ca. 10 Unterteilungen
-  const xSteps = 10;
-  const xStepValue = Math.ceil(maxMonate / xSteps);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#666';
-
-  for (let m = 0; m <= maxMonate; m += xStepValue) {
-    const x = xPos(m);
-
-    ctx.beginPath();
-    ctx.moveTo(x, paddingTop);
-    ctx.lineTo(x, paddingTop + plotHeight);
-    ctx.strokeStyle = '#eee';
-    ctx.stroke();
-
-    ctx.fillText(m.toString(), x, paddingTop + plotHeight + 15);
-  }
-
-  ctx.textAlign = 'left';
-
-  // Kredit A zeichnen
-  if (A && A.restschuldVerlauf.length) {
-    ctx.strokeStyle = '#007aff';
+  if (A) {
+    ctx.strokeStyle = "#007aff";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    A.restschuldVerlauf.forEach((rest, idx) => {
-      const x = xPos(idx);
+
+    A.restschuldVerlauf.forEach((rest, i) => {
+      const x = xPos(i);
       const y = yPos(rest);
-      if (idx === 0) ctx.moveTo(x, y);
+
+      if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
+
     ctx.stroke();
   }
 
-  // Kredit B zeichnen
-  if (B && B.restschuldVerlauf.length) {
-    ctx.strokeStyle = '#ff3b30';
+  if (B) {
+    ctx.strokeStyle = "#ff3b30";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    B.restschuldVerlauf.forEach((rest, idx) => {
-      const x = xPos(idx);
+
+    B.restschuldVerlauf.forEach((rest, i) => {
+      const x = xPos(i);
       const y = yPos(rest);
-      if (idx === 0) ctx.moveTo(x, y);
+
+      if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
+
     ctx.stroke();
   }
-
-  // Legende
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = '#007aff';
-  ctx.fillText('A', paddingLeft + 10, paddingTop + 15);
-  ctx.fillStyle = '#ff3b30';
-  ctx.fillText('B', paddingLeft + 25, paddingTop + 15);
 }
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js');
-      });
-    }
-
-    window.addEventListener('load', () => {
-      const canvas = document.getElementById('chart');
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-    });
-
-    window.addEventListener('resize', () => {
-      vergleichen();
-    });
-  </script>
-</body>
-</html>
-
-
-
-
-
-
+window.addEventListener("resize", vergleichen);
+</script>
 
