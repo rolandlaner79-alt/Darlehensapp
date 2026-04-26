@@ -147,19 +147,19 @@ canvas{
       <h2>Kredit A</h2>
 
       <label>Kreditsumme (€)
-       <input id="kreditA" type="number" value="">
+       <input id="kreditA" type="number" oninput="vergleichen()">
       </label>
 
       <label>Zins p.a. (%)
-        <input id="zinsA" type="number" step="0.01" value="">
+        <input id="zinsA" type="number" step="0.01" oninput="vergleichen()">
       </label>
 
       <label>Laufzeit (Monate)
-        <input id="laufzeitA" type="number">
+        <input id="laufzeitA" type="number" oninput="vergleichen()">
       </label>
 
       <label>Monatliche Rate (€)
-        <input id="rateA" type="number">
+        <input id="rateA" type="number" oninput="vergleichen()">
       </label>
     </div>
 
@@ -167,19 +167,19 @@ canvas{
       <h2>Kredit B</h2>
 
       <label>Kreditsumme (€)
-        <input id="kreditB" type="number" value="">
+        <input id="kreditB" type="number" oninput="vergleichen()">
       </label>
 
       <label>Zins p.a. (%)
-       <input id="zinsB" type="number" step="0.01" value="">
+       <input id="zinsB" type="number" step="0.01" oninput="vergleichen()">
       </label>
 
       <label>Laufzeit (Monate)
-        <input id="laufzeitB" type="number">
+        <input id="laufzeitB" type="number" oninput="vergleichen()">
       </label>
 
       <label>Monatliche Rate (€)
-        <input id="rateB" type="number">
+        <input id="rateB" type="number" oninput="vergleichen()">
       </label>
     </div>
 
@@ -223,11 +223,31 @@ function intv(id){
   return parseInt(document.getElementById(id).value);
 }
 
+/* -------------------------
+   Kreditberechnung
+-------------------------- */
 function calcLoan(K,p,n,rateInput){
   const i = p/12/100;
-  let rate;
 
-  if(!p) return null;
+  /* 0%-Zins Sonderfall */
+  if(p === 0){
+    if(K && n && !rateInput){
+      const rate = K/n;
+      return buildLoan(K,rate,n,0);
+    }
+    if(K && rateInput && !n){
+      const n2 = Math.ceil(K/rateInput);
+      return buildLoan(K,rateInput,n2,0);
+    }
+    if(!K && n && rateInput){
+      const K2 = rateInput*n;
+      return buildLoan(K2,rateInput,n,0);
+    }
+    return null;
+  }
+
+  /* Normalfall */
+  let rate;
 
   if(K && n && !rateInput){
     rate = K * (i/(1-Math.pow(1+i,-n)));
@@ -245,6 +265,10 @@ function calcLoan(K,p,n,rateInput){
     return null;
   }
 
+  return amortize(K,rate,n,i);
+}
+
+function amortize(K,rate,n,i){
   let rest = K;
   let zinsen = 0;
   let arr = [];
@@ -258,18 +282,25 @@ function calcLoan(K,p,n,rateInput){
     if(rest<=0) break;
   }
 
-  const monate = arr.length;
-  const gesamt = monate*rate;
+  return buildLoan(K,rate,arr.length,zinsen,arr);
+}
 
+function buildLoan(K,rate,n,zinsen,verlauf){
+  const gesamt = rate*n;
   return{
-    K,rate,n:monate,
+    K,
+    rate,
+    n,
     zinsen,
     gesamt,
-    zinsQuote:(zinsen/K)*100,
-    verlauf:arr
+    zinsQuote: K>0 ? (zinsen/K)*100 : 0,
+    verlauf: verlauf || Array.from({length:n},(_,i)=>K - rate*(i+1))
   };
 }
 
+/* -------------------------
+   Rendering
+-------------------------- */
 function render(id,title,d){
   if(!d){
     document.getElementById(id).innerHTML="<b>Ungültige Eingaben</b>";
@@ -312,20 +343,12 @@ function compare(A,B){
   w.innerHTML = `<div class="good">${txt}</div>`;
 }
 
+/* -------------------------
+   Hauptfunktion
+-------------------------- */
 function vergleichen(){
-  const A = calcLoan(
-    num("kreditA"),
-    num("zinsA"),
-    intv("laufzeitA"),
-    num("rateA")
-  );
-
-  const B = calcLoan(
-    num("kreditB"),
-    num("zinsB"),
-    intv("laufzeitB"),
-    num("rateB")
-  );
+  const A = calcLoan(num("kreditA"),num("zinsA"),intv("laufzeitA"),num("rateA"));
+  const B = calcLoan(num("kreditB"),num("zinsB"),intv("laufzeitB"),num("rateB"));
 
   render("ergA","Kredit A",A);
   render("ergB","Kredit B",B);
@@ -333,7 +356,9 @@ function vergleichen(){
   chart(A,B);
 }
 
-<script>
+/* -------------------------
+   Chart
+-------------------------- */
 function chart(A,B){
   const c = document.getElementById("chart");
   const ctx = c.getContext("2d");
@@ -376,11 +401,9 @@ function chart(A,B){
     return top + h - (v/maxRest)*h;
   }
 
-  /* Hintergrund */
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0,0,r.width,r.height);
 
-  /* Raster horizontal */
   ctx.strokeStyle = "#ececf1";
   ctx.lineWidth = 1;
 
@@ -392,7 +415,6 @@ function chart(A,B){
     ctx.stroke();
   }
 
-  /* Raster vertikal */
   for(let i=0;i<=4;i++){
     const gx = left + (w/4)*i;
     ctx.beginPath();
@@ -401,7 +423,6 @@ function chart(A,B){
     ctx.stroke();
   }
 
-  /* Achsen */
   ctx.strokeStyle = "#bfc3ca";
   ctx.lineWidth = 1.2;
 
@@ -411,21 +432,15 @@ function chart(A,B){
   ctx.lineTo(left+w,top+h);
   ctx.stroke();
 
-  /* Y Werte */
   ctx.fillStyle = "#666";
   ctx.font = "11px sans-serif";
 
   for(let i=0;i<=5;i++){
     const val = maxRest - (maxRest/5)*i;
     const gy = top + (h/5)*i + 4;
-    ctx.fillText(
-      val.toLocaleString("de-DE",{maximumFractionDigits:0}) + "€",
-      2,
-      gy
-    );
+    ctx.fillText(val.toLocaleString("de-DE",{maximumFractionDigits:0}) + "€",2,gy);
   }
 
-  /* X Werte Monate */
   ctx.textAlign = "center";
 
   for(let i=0;i<=4;i++){
@@ -436,7 +451,6 @@ function chart(A,B){
 
   ctx.textAlign = "left";
 
-  /* Linien */
   draw(A,"#007aff");
   draw(B,"#ff3b30");
 
@@ -458,7 +472,6 @@ function chart(A,B){
     ctx.stroke();
   }
 
-  /* Legende */
   ctx.fillStyle = "#007aff";
   ctx.fillRect(left+8,top+6,10,10);
   ctx.fillStyle = "#222";
@@ -469,7 +482,6 @@ function chart(A,B){
   ctx.fillStyle = "#222";
   ctx.fillText("Kredit B",left+111,top+15);
 
-  /* Titel unten */
   ctx.fillStyle = "#666";
   ctx.textAlign = "center";
   ctx.fillText("Monate",left+w/2,r.height-20);
