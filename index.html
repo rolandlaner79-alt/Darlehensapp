@@ -322,10 +322,13 @@ function zeichneChart(A, B) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, rect.width, rect.height);
 
-  const paddingLeft = 30;
-  const paddingRight = 10;
-  const paddingTop = 10;
-  const paddingBottom = 25;
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  const paddingLeft = 40;
+  const paddingRight = 15;
+  const paddingTop = 15;
+  const paddingBottom = 30;
 
   const plotWidth = rect.width - paddingLeft - paddingRight;
   const plotHeight = rect.height - paddingTop - paddingBottom;
@@ -333,12 +336,12 @@ function zeichneChart(A, B) {
   let maxRest = 0;
   let maxMonate = 0;
 
-  if (A) {
+  if (A && A.restschuldVerlauf.length) {
     maxRest = Math.max(maxRest, ...A.restschuldVerlauf);
     maxMonate = Math.max(maxMonate, A.restschuldVerlauf.length);
   }
 
-  if (B) {
+  if (B && B.restschuldVerlauf.length) {
     maxRest = Math.max(maxRest, ...B.restschuldVerlauf);
     maxMonate = Math.max(maxMonate, B.restschuldVerlauf.length);
   }
@@ -353,13 +356,28 @@ function zeichneChart(A, B) {
     return paddingTop + plotHeight - (rest / maxRest) * plotHeight;
   }
 
-  ctx.strokeStyle = "#ddd";
+  // Achsen
+  ctx.strokeStyle = "#ccc";
+  ctx.lineWidth = 1;
+
   ctx.beginPath();
   ctx.moveTo(paddingLeft, paddingTop);
   ctx.lineTo(paddingLeft, paddingTop + plotHeight);
   ctx.lineTo(paddingLeft + plotWidth, paddingTop + plotHeight);
   ctx.stroke();
 
+  // Texte
+  ctx.fillStyle = "#666";
+  ctx.font = "11px sans-serif";
+
+  ctx.fillText("0 €", 5, paddingTop + plotHeight);
+  ctx.fillText(formatEuro(maxRest) + " €", 5, paddingTop + 10);
+
+  ctx.textAlign = "center";
+  ctx.fillText("Monate", paddingLeft + plotWidth / 2, rect.height - 5);
+  ctx.textAlign = "left";
+
+  // Kredit A
   if (A) {
     ctx.strokeStyle = "#007aff";
     ctx.lineWidth = 2;
@@ -376,6 +394,7 @@ function zeichneChart(A, B) {
     ctx.stroke();
   }
 
+  // Kredit B
   if (B) {
     ctx.strokeStyle = "#ff3b30";
     ctx.lineWidth = 2;
@@ -391,8 +410,11 @@ function zeichneChart(A, B) {
 
     ctx.stroke();
   }
+
+  // Legende
+  ctx.fillStyle = "#007aff";
+  ctx.fillText("A", paddingLeft + 10, paddingTop + 15);
+
+  ctx.fillStyle = "#ff3b30";
+  ctx.fillText("B", paddingLeft + 25, paddingTop + 15);
 }
-
-window.addEventListener("resize", vergleichen);
-</script>
-
