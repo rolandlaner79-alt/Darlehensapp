@@ -184,24 +184,36 @@ input {
   </div>
 
   <script>
-    function berechneDarlehen(K, p, n, rateInput) {
-      const i = p / 12 / 100;
-      let rate;
+  function berechneDarlehen(K, p, n, rateInput) {
+  const i = p / 12 / 100;
+  let rate;
 
-      if (!K || !p) return null;
+  if (!p) return null;
 
-      if (!rateInput && n) {
-        rate = K * (i / (1 - Math.pow(1 + i, -n)));
-      } else if (rateInput && !n) {
-        rate = rateInput;
-        if (rate <= K * i) return null;
-        n = Math.log(rate / (rate - K * i)) / Math.log(1 + i);
-        n = Math.ceil(n);
-      } else if (rateInput && n) {
-        rate = rateInput;
-      } else {
-        return null;
-      }
+  // FALL 1: Kreditsumme + Laufzeit => Rate
+  if (K && n && !rateInput) {
+    rate = K * (i / (1 - Math.pow(1 + i, -n)));
+  }
+
+  // FALL 2: Kreditsumme + Rate => Laufzeit
+  else if (K && rateInput && !n) {
+    rate = rateInput;
+    if (rate <= K * i) return null;
+
+    n = Math.log(rate / (rate - K * i)) / Math.log(1 + i);
+    n = Math.ceil(n);
+  }
+
+  // FALL 3: Rate + Laufzeit => Kreditsumme (NEU)
+  else if (!K && rateInput && n) {
+    rate = rateInput;
+
+    K = rate * ((1 - Math.pow(1 + i, -n)) / i);
+  }
+
+  else {
+    return null;
+  }
 
       let rest = K;
       let gesamtZinsen = 0;
