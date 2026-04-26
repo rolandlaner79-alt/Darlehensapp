@@ -147,11 +147,11 @@ canvas{
       <h2>Kredit A</h2>
 
       <label>Kreditsumme (€)
-        <input id="kreditA" type="number" value="100000">
+       <input id="kreditA" type="number" value="">
       </label>
 
       <label>Zins p.a. (%)
-        <input id="zinsA" type="number" step="0.01" value="3">
+        <input id="zinsA" type="number" step="0.01" value="">
       </label>
 
       <label>Laufzeit (Monate)
@@ -167,11 +167,11 @@ canvas{
       <h2>Kredit B</h2>
 
       <label>Kreditsumme (€)
-        <input id="kreditB" type="number" value="100000">
+        <input id="kreditB" type="number" value="">
       </label>
 
       <label>Zins p.a. (%)
-        <input id="zinsB" type="number" step="0.01" value="3">
+       <input id="zinsB" type="number" step="0.01" value="">
       </label>
 
       <label>Laufzeit (Monate)
@@ -333,6 +333,7 @@ function vergleichen(){
   chart(A,B);
 }
 
+<script>
 function chart(A,B){
   const c = document.getElementById("chart");
   const ctx = c.getContext("2d");
@@ -340,89 +341,139 @@ function chart(A,B){
   const r = c.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
 
-  c.width = r.width*dpr;
-  c.height = r.height*dpr;
+  c.width = r.width * dpr;
+  c.height = r.height * dpr;
 
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,r.width,r.height);
 
-  const L=45,T=15,R=15,BM=30;
-  const W=r.width-L-R;
-  const H=r.height-T-BM;
+  const left = 52;
+  const top = 18;
+  const right = 18;
+  const bottom = 34;
 
-  let maxRest=0,maxM=0;
+  const w = r.width - left - right;
+  const h = r.height - top - bottom;
 
-  [A,B].forEach(x=>{
-    if(x){
-      maxRest=Math.max(maxRest,...x.verlauf);
-      maxM=Math.max(maxM,x.verlauf.length);
+  let maxRest = 0;
+  let maxMonate = 0;
+
+  [A,B].forEach(d=>{
+    if(d){
+      maxRest = Math.max(maxRest,...d.verlauf);
+      maxMonate = Math.max(maxMonate,d.verlauf.length);
     }
   });
 
-  if(!maxRest) return;
+  if(maxRest <= 0) return;
 
-  function xp(i){
-    if(maxM<=1) return L;
-    return L + (i/(maxM-1))*W;
+  function x(i){
+    if(maxMonate <= 1) return left;
+    return left + (i/(maxMonate-1))*w;
   }
 
-  function yp(v){
-    return T + H - (v/maxRest)*H;
+  function y(v){
+    return top + h - (v/maxRest)*h;
   }
 
-  ctx.strokeStyle="#ddd";
-  ctx.lineWidth=1;
+  /* Hintergrund */
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0,0,r.width,r.height);
 
-  for(let g=0;g<=4;g++){
-    const y=T+(H/4)*g;
+  /* Raster horizontal */
+  ctx.strokeStyle = "#ececf1";
+  ctx.lineWidth = 1;
+
+  for(let i=0;i<=5;i++){
+    const gy = top + (h/5)*i;
     ctx.beginPath();
-    ctx.moveTo(L,y);
-    ctx.lineTo(L+W,y);
+    ctx.moveTo(left,gy);
+    ctx.lineTo(left+w,gy);
     ctx.stroke();
   }
 
+  /* Raster vertikal */
+  for(let i=0;i<=4;i++){
+    const gx = left + (w/4)*i;
+    ctx.beginPath();
+    ctx.moveTo(gx,top);
+    ctx.lineTo(gx,top+h);
+    ctx.stroke();
+  }
+
+  /* Achsen */
+  ctx.strokeStyle = "#bfc3ca";
+  ctx.lineWidth = 1.2;
+
   ctx.beginPath();
-  ctx.moveTo(L,T);
-  ctx.lineTo(L,T+H);
-  ctx.lineTo(L+W,T+H);
+  ctx.moveTo(left,top);
+  ctx.lineTo(left,top+h);
+  ctx.lineTo(left+w,top+h);
   ctx.stroke();
 
-  ctx.fillStyle="#666";
-  ctx.font="11px sans-serif";
-  ctx.fillText("0 €",5,T+H);
-  ctx.fillText(euro(maxRest)+" €",5,T+10);
+  /* Y Werte */
+  ctx.fillStyle = "#666";
+  ctx.font = "11px sans-serif";
 
-  ctx.textAlign="center";
-  ctx.fillText("Monate",L+W/2,r.height-6);
-  ctx.textAlign="left";
+  for(let i=0;i<=5;i++){
+    const val = maxRest - (maxRest/5)*i;
+    const gy = top + (h/5)*i + 4;
+    ctx.fillText(
+      val.toLocaleString("de-DE",{maximumFractionDigits:0}) + "€",
+      2,
+      gy
+    );
+  }
 
-  drawLine(A,"#007aff");
-  drawLine(B,"#ff3b30");
+  /* X Werte Monate */
+  ctx.textAlign = "center";
 
-  ctx.fillStyle="#007aff";
-  ctx.fillText("A",L+10,T+14);
+  for(let i=0;i<=4;i++){
+    const monat = Math.round((maxMonate/4)*i);
+    const gx = left + (w/4)*i;
+    ctx.fillText(monat,gx,r.height-8);
+  }
 
-  ctx.fillStyle="#ff3b30";
-  ctx.fillText("B",L+25,T+14);
+  ctx.textAlign = "left";
 
-  function drawLine(d,col){
+  /* Linien */
+  draw(A,"#007aff");
+  draw(B,"#ff3b30");
+
+  function draw(d,color){
     if(!d) return;
-    ctx.strokeStyle=col;
-    ctx.lineWidth=2.5;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
     ctx.beginPath();
 
     d.verlauf.forEach((v,i)=>{
-      const x=xp(i), y=yp(v);
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
+      const px = x(i);
+      const py = y(v);
+
+      if(i===0) ctx.moveTo(px,py);
+      else ctx.lineTo(px,py);
     });
 
     ctx.stroke();
   }
-}
 
-window.addEventListener("load",vergleichen);
-window.addEventListener("resize",vergleichen);
+  /* Legende */
+  ctx.fillStyle = "#007aff";
+  ctx.fillRect(left+8,top+6,10,10);
+  ctx.fillStyle = "#222";
+  ctx.fillText("Kredit A",left+24,top+15);
+
+  ctx.fillStyle = "#ff3b30";
+  ctx.fillRect(left+95,top+6,10,10);
+  ctx.fillStyle = "#222";
+  ctx.fillText("Kredit B",left+111,top+15);
+
+  /* Titel unten */
+  ctx.fillStyle = "#666";
+  ctx.textAlign = "center";
+  ctx.fillText("Monate",left+w/2,r.height-20);
+}
 </script>
 
 </body>
